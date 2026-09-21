@@ -1,10 +1,10 @@
-import { FuzzingResults, VmParsingData } from "../types/types";
+import { FuzzingResults, VmParsingData } from "../types/types.js";
 import {
     buildReprosFromHalmosLogs,
     parseAddressBook,
     parseFailedProperties,
     parseTargetFunctions,
-} from "./functionGenerator";
+} from "./functionGenerator.js";
 
 // Parse the entire Halmos log and update the jobStats counters and results list
 export const processHalmos = (logs: string, jobStats: FuzzingResults, maxCounterexamples: number = 1) => {

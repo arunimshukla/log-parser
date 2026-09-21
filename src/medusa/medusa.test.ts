@@ -1,4 +1,4 @@
-import { getPropertyAndSequenceString } from "./index";
+import { getPropertyAndSequenceString } from "./index.js";
 
 describe("Medusa Parser", () => {
   describe("getPropertyAndSequenceString", () => {

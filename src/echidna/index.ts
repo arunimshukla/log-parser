@@ -1,5 +1,5 @@
-import { processLogs } from "../main";
-import { Fuzzer, FuzzingResults, VmParsingData } from "../types/types";
+import { processLogs } from "../main.js";
+import { Fuzzer, FuzzingResults, VmParsingData } from "../types/types.js";
 import {
   correctAllChecksums,
   formatTimeDifference,
@@ -7,7 +7,7 @@ import {
   shouldParseLine,
   parseHexValue,
   parseSpecialChars,
-} from "../utils/utils";
+} from "../utils/utils.js";
 
 
 //////////////////////////////////////

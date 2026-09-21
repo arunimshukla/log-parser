@@ -13,12 +13,33 @@ import {
 //////////////////////////////////////
 //          ECHIDNA                 //
 //////////////////////////////////////
-let echidnaTraceLogger = false;
-let echidnaSequenceLogger = false;
-let currentBrokenPropertyEchidna = "";
-let prevLine = "";
-let firstTimestamp: Date;
-let maxValueOptimization = "";
+interface EchidnaParserState {
+  traceLogger: boolean;
+  sequenceLogger: boolean;
+  currentBrokenProperty: string;
+  previousLine: string;
+  firstTimestamp?: Date;
+  maxValueOptimization: string;
+}
+
+const parserState = new WeakMap<FuzzingResults, EchidnaParserState>();
+
+function getParserState(jobStats: FuzzingResults): EchidnaParserState {
+  const existingState = parserState.get(jobStats);
+  if (existingState) {
+    return existingState;
+  }
+
+  const newState: EchidnaParserState = {
+    traceLogger: false,
+    sequenceLogger: false,
+    currentBrokenProperty: "",
+    previousLine: "",
+    maxValueOptimization: "",
+  };
+  parserState.set(jobStats, newState);
+  return newState;
+}
 /**
  * The processEchidna function processes log lines to extract job statistics and traces for fuzzing results.
  * @param {string} line - The `processEchidna` function processes a line of text
@@ -29,15 +50,16 @@ let maxValueOptimization = "";
  * processed.
  */
 export function processEchidna(line: string, jobStats: FuzzingResults): void {
+  const state = getParserState(jobStats);
   if (line.includes("Compiling ")) {
-    firstTimestamp = parseTimestamp(line) as Date;
+    state.firstTimestamp = parseTimestamp(line) as Date;
   }
   line = line.trim();
-  if (firstTimestamp) {
+  if (state.firstTimestamp) {
     const currentTimestamp = parseTimestamp(line);
     if (currentTimestamp) {
       const diffMilliseconds =
-        currentTimestamp.getTime() - firstTimestamp.getTime();
+        currentTimestamp.getTime() - state.firstTimestamp.getTime();
       const diffSeconds = diffMilliseconds / 1000;
       jobStats.duration = formatTimeDifference(
         parseInt(diffSeconds.toFixed(2))
@@ -46,8 +68,8 @@ export function processEchidna(line: string, jobStats: FuzzingResults): void {
   }
   // Optimization mode
   if (line.includes(": max value:")) {
-    currentBrokenPropertyEchidna = line.split(": max value")[0];
-    maxValueOptimization = line.split(": max value:")[1];
+    state.currentBrokenProperty = line.split(": max value")[0];
+    state.maxValueOptimization = line.split(": max value:")[1];
   }
   if (line.includes(": passing") || line.includes(": failed!")) {
     jobStats.results.push(line);
@@ -61,19 +83,19 @@ export function processEchidna(line: string, jobStats: FuzzingResults): void {
   // If Echidna logs have the "no transactions" message, we shouldn't keep that in the traces
   if (
     line.includes("(no transactions)") &&
-    prevLine.includes("Call sequence")
+    state.previousLine.includes("Call sequence")
   ) {
-    echidnaSequenceLogger = false;
+    state.sequenceLogger = false;
     const existingProperty = jobStats.brokenProperties.find(
-      (el) => el.brokenProperty === currentBrokenPropertyEchidna
+      (el) => el.brokenProperty === state.currentBrokenProperty
     );
     if (existingProperty) {
       jobStats.brokenProperties = jobStats.brokenProperties.filter(
-        (el) => el.brokenProperty !== currentBrokenPropertyEchidna
+        (el) => el.brokenProperty !== state.currentBrokenProperty
       );
     }
-    currentBrokenPropertyEchidna = "";
-    echidnaTraceLogger = false;
+    state.currentBrokenProperty = "";
+    state.traceLogger = false;
   }
   if (line.includes("[status] tests:")) {
     const coverageMatch = line.match(/cov: (\d+)/);
@@ -89,50 +111,50 @@ export function processEchidna(line: string, jobStats: FuzzingResults): void {
   } else {
     const sequenceMatch = line.includes("Call sequence");
     if (sequenceMatch) {
-      echidnaSequenceLogger = true;
-      if (!currentBrokenPropertyEchidna) {
-        if (prevLine.includes("falsified!")) {
-          const fasifieldMatch = prevLine.match(/Test\s+(.*?)\s+falsified!/);
+      state.sequenceLogger = true;
+      if (!state.currentBrokenProperty) {
+        if (state.previousLine.includes("falsified!")) {
+          const fasifieldMatch = state.previousLine.match(/Test\s+(.*?)\s+falsified!/);
           if (fasifieldMatch) {
-            currentBrokenPropertyEchidna = fasifieldMatch[1];
+            state.currentBrokenProperty = fasifieldMatch[1];
           }
         } else {
-          currentBrokenPropertyEchidna = prevLine.split(": failed!")[0];
+          state.currentBrokenProperty = state.previousLine.split(": failed!")[0];
         }
       } else {
-        if (prevLine.includes("falsified!")) {
-          const fasifieldMatch = prevLine.match(/Test\s+(.*?)\s+falsified!/);
+        if (state.previousLine.includes("falsified!")) {
+          const fasifieldMatch = state.previousLine.match(/Test\s+(.*?)\s+falsified!/);
           if (fasifieldMatch) {
-            currentBrokenPropertyEchidna = fasifieldMatch[1];
+            state.currentBrokenProperty = fasifieldMatch[1];
           }
         }
       }
     }
 
-    currentBrokenPropertyEchidna = cleanUpBrokenPropertyName(
-      currentBrokenPropertyEchidna
+    state.currentBrokenProperty = cleanUpBrokenPropertyName(
+      state.currentBrokenProperty
     );
     const tracesMatch = line.includes("Traces:");
     if (tracesMatch) {
-      echidnaTraceLogger = true;
+      state.traceLogger = true;
     }
 
     if (
-      (line === "" && echidnaTraceLogger) ||
+      (line === "" && state.traceLogger) ||
       line.includes("Saved reproducer") ||
       line.includes("Traces:") ||
       shouldParseLine(line)
     ) {
-      echidnaTraceLogger = false;
-      echidnaSequenceLogger = false;
-      if (maxValueOptimization !== "") {
-        jobStats.traces.push(`// Max value:${maxValueOptimization}`);
-        maxValueOptimization = "";
+      state.traceLogger = false;
+      state.sequenceLogger = false;
+      if (state.maxValueOptimization !== "") {
+        jobStats.traces.push(`// Max value:${state.maxValueOptimization}`);
+        state.maxValueOptimization = "";
       }
       jobStats.traces.push("---End Trace---");
 
       const existingProperty = jobStats.brokenProperties.find(
-        (el) => el.brokenProperty === currentBrokenPropertyEchidna
+        (el) => el.brokenProperty === state.currentBrokenProperty
       );
       if (
         existingProperty &&
@@ -140,12 +162,12 @@ export function processEchidna(line: string, jobStats: FuzzingResults): void {
       ) {
         existingProperty.sequence += `---End Trace---\n`;
       }
-      currentBrokenPropertyEchidna = "";
+      state.currentBrokenProperty = "";
     }
-    if (echidnaSequenceLogger || echidnaTraceLogger) {
+    if (state.sequenceLogger || state.traceLogger) {
       jobStats.traces.push(line);
       const existingProperty = jobStats.brokenProperties.find(
-        (el) => el.brokenProperty === currentBrokenPropertyEchidna
+        (el) => el.brokenProperty === state.currentBrokenProperty
       );
 
       if (line.includes("*wait* ")) {
@@ -161,17 +183,17 @@ vm.roll(block.number + ${blockDelay});`;
       }
       if (!existingProperty) {
         jobStats.brokenProperties.push({
-          brokenProperty: currentBrokenPropertyEchidna,
+          brokenProperty: state.currentBrokenProperty,
           sequence: `${line}\n`,
         });
       } else {
           if(line.startsWith("Call sequence")) {
               existingProperty.sequence = `${line}\n`;
           } else {
-              if (maxValueOptimization !== "") {
-                  existingProperty.sequence += `// Max value:${maxValueOptimization}\n`
-                  // jobStats.traces.push(`// Max value: ${maxValueOptimization}`);
-                  maxValueOptimization = "";
+              if (state.maxValueOptimization !== "") {
+                  existingProperty.sequence += `// Max value:${state.maxValueOptimization}\n`
+                  // jobStats.traces.push(`// Max value: ${state.maxValueOptimization}`);
+                  state.maxValueOptimization = "";
               }
               if (!existingProperty.sequence.includes("---End Trace---")) {
                   existingProperty.sequence += `${line}\n`;
@@ -180,7 +202,7 @@ vm.roll(block.number + ${blockDelay});`;
       }
     }
   }
-  prevLine = line;
+  state.previousLine = line;
 }
 
 // Replace brokenProp() by brokenProp

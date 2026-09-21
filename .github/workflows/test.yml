@@ -27,3 +27,9 @@ jobs:
 
     - name: Run tests with coverage
       run: yarn test --coverage
+
+    - name: Build package
+      run: yarn build
+
+    - name: Smoke-test package exports
+      run: yarn test:exports

@@ -2,12 +2,12 @@ export {
   processEchidna,
   echidnaLogsToFunctions,
   echidnaShrunkAndProcess,
-} from "./echidna/index";
-export { processMedusa, medusaLogsToFunctions } from "./medusa/index";
+} from "./echidna/index.js";
+export { processMedusa, medusaLogsToFunctions } from "./medusa/index.js";
 export {
   processHalmos,
   halmosLogsToFunctions,
-} from "./halmos/index";
+} from "./halmos/index.js";
 
 export {
   VmParsingData,
@@ -15,7 +15,7 @@ export {
   BrokenProperty,
   PropertyAndSequence,
   Fuzzer,
-} from "./types/types";
-export { correctAllChecksums, formatAddress, formatBytes } from "./utils/utils";
-export { processLogs } from "./main";
-export { generateJobMD } from "./reportBuilder/reportBuilder";
+} from "./types/types.js";
+export { correctAllChecksums, formatAddress, formatBytes } from "./utils/utils.js";
+export { processLogs } from "./main.js";
+export { generateJobMD } from "./reportBuilder/reportBuilder.js";

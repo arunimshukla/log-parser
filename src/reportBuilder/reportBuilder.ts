@@ -1,8 +1,8 @@
-import { echidnaLogsToFunctions, echidnaShrunkAndProcess } from "../echidna";
-import { halmosLogsToFunctions } from "../halmos";
-import { processLogs } from "../main";
-import { medusaLogsToFunctions } from "../medusa";
-import { Fuzzer, FuzzingResults, VmParsingData } from "../types/types";
+import { echidnaLogsToFunctions, echidnaShrunkAndProcess } from "../echidna/index.js";
+import { halmosLogsToFunctions } from "../halmos/index.js";
+import { processLogs } from "../main.js";
+import { medusaLogsToFunctions } from "../medusa/index.js";
+import { Fuzzer, FuzzingResults, VmParsingData } from "../types/types.js";
 
 export const generateJobMD = (fuzzer: Fuzzer, logs: string, label: string) => {
   let data = processLogs(logs, fuzzer);

@@ -11,13 +11,17 @@
     "lib/esm"
   ],
   "exports": {
-    "require": "./lib/cjs/index.js",
-    "import": "./lib/esm/index.js"
+    ".": {
+      "types": "./lib/esm/index.d.ts",
+      "require": "./lib/cjs/index.js",
+      "import": "./lib/esm/index.js"
+    }
   },
   "author": "0xsi <simon.busch@live.fr>",
   "scripts": {
     "test": "jest",
-    "build": "tsc && tsc -p tsconfig.cjs.json"
+    "build": "tsc && tsc -p tsconfig.cjs.json && node scripts/write-module-packages.cjs",
+    "test:exports": "node scripts/test-package-exports.cjs"
   },
   "dependencies": {
     "@babel/parser": "^7.25.6",

@@ -1,8 +1,8 @@
-import { Fuzzer, type FuzzingResults } from "./types/types";
-import { processEchidna } from "./echidna/index";
-import { processMedusa } from "./medusa/index";
-import { processHalmos } from "./halmos/index";
-import { processTraceLogs } from "./utils/utils";
+import { Fuzzer, type FuzzingResults } from "./types/types.js";
+import { processEchidna } from "./echidna/index.js";
+import { processMedusa } from "./medusa/index.js";
+import { processHalmos } from "./halmos/index.js";
+import { processTraceLogs } from "./utils/utils.js";
 
 /**
  * The `processLogs` function processes logs based on the specified tool (Medusa or

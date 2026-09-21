@@ -2,12 +2,12 @@ import {
   FuzzingResults,
   PropertyAndSequence,
   VmParsingData,
-} from "../types/types";
+} from "../types/types.js";
 import {
   captureFuzzingDuration,
   formatAddress,
   formatBytes,
-} from "../utils/utils";
+} from "../utils/utils.js";
 //////////////////////////////////////
 //          MEDUSA                  //
 //////////////////////////////////////
